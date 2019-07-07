@@ -1,4 +1,5 @@
-﻿using ReportsWeb.Models.DataTable;
+﻿using ReportsWeb.Extensions;
+using ReportsWeb.Models.DataTable;
 using ReportsWeb.Repository;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace ReportsWeb.Services
 
         public (IEnumerable<PersonTableViewModel> Data, int Count) GetPeopleForDataTable(DataParameters parameters)
         {
-            var data = personRepository.GetPeopleReadOnly()
+            var items = personRepository.GetPeopleReadOnly()
                                    .Select(x => new PersonTableViewModel
                                    {
                                        FullName = x.FullName,
@@ -26,7 +27,15 @@ namespace ReportsWeb.Services
                                        Age = (DateTime.Now.Subtract(x.DateOfBirth).Days / 365).ToString(),
                                        Status = x.Status == true ? "Active" : "Inactive"
                                    });
-            return (data, personRepository.Count());
+
+            if (!string.IsNullOrWhiteSpace(parameters.Search.Value))
+            {
+                items = items.Filter(parameters.Search.Value);
+            }
+
+            items = items.Order(parameters.Order[0].Column, parameters.Order[0].Dir);
+
+            return (items, personRepository.Count());
         }
     }
 }
